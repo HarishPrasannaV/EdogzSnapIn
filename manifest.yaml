@@ -1,0 +1,109 @@
+version: '1'
+
+name: Twilio Customer Support Snap In
+description: Telephony integration based on Twilio for DevReV and OpenAI
+
+service_account:
+  display_name: "Edogz Bot"
+
+event-sources:
+
+  - name: twilio-incoming-alert
+    description: Voice URL for Twilio Integraion with the Snap In
+    display_name: Twilio Voice URL
+    type: flow-custom-webhook
+    setup_instructions: |
+      ## Twilio Voice URL
+
+      Voice URL : `{{source.trigger_url}}`
+
+      1. Create a twilio function and paste this code in.
+      2. Buy a twilio number and configure it to use the twilio function you've just created with the code below.
+
+      NOTE : 
+      - Call request handling not currently not possible in DevRev as you cannot create a response with flow-custom-webhook.
+      However, this issue is expected to be resoved in the future.
+      - Please ignore the application error message at end of the call, as twilio wouldn't get a response from DevRev Webhook
+
+      Twilio Function Code :
+
+      exports.handler = function(context, event, callback) {
+        let twiml = new Twilio.twiml.VoiceResponse()
+        switch (event.Digits) {
+          case '1':
+            twiml.say('Please leave a voice message at the beep and Press any key to finish.');
+            twiml.say(',Please be aware  that the maximum message length is 2 minutes and, Ignore the error message at the end');
+            twiml.record({action: '`{{source.trigger_url}}`', method: 'POST', timeout : 10, maxLength: 300, transcribe: true});
+            twiml.say('Sorry, We were unable to receive your message,Goodbye!.');
+            break;
+          case '2':
+            twiml.say('The following call will be recorded');
+            twiml.dial('+91XXXXXXXXXX'); // Enter customer support agent number
+            twiml.record({action: '`{{source.trigger_url}}`', method: 'POST', transcribe: true});
+            break;
+          default:
+              twiml.say('Thank you for reaching out to DevRev customer support.')
+              twiml.pause({
+                  length: 1
+              });
+              twiml.say('Press one to leave a voice message.')
+              twiml.pause({
+                  length: 1
+              });
+              twiml.say('Press two to talk with a customer support agent.')
+              twiml.pause({
+                  length: 1
+              });
+              twiml.gather({numDigits: 1})
+              .say('We are awaiting your response.')
+              twiml.say('We did not receive any input. Goodbye!.');
+
+        }
+        callback(null, twiml)
+      }
+
+    config: 
+      policy: |
+        package rego
+        output = {"event": event, "event_key": event_key} {
+          event := input.request        
+          event_key := "twilio.call-event"
+        } 
+        
+  - name: devrev-webhook
+    description: Event coming from DevRev
+    display_name: DevRev
+    type: devrev-webhook
+    config:
+      event_types:
+        - work_created
+  
+
+
+functions:
+  - name: function_2
+    description: To Handle Incoming Calls from Twilio and create Tickets
+
+automations:
+  - name: handle_incoming_calls
+    source: twilio-incoming-alert
+    event_types:
+      - custom:twilio.call-event
+    function: function_2
+
+globals:
+  - name: openai_api_key
+    description: OpenAI API Key
+    devrev_field_type: text
+    ui:
+        display_name: OpenAI API Key
+  - name: twilio_account_sid
+    description: Twilio Account SID
+    devrev_field_type: text
+    ui:
+        display_name: Twilio Account SID
+  - name: twilio_auth_token
+    description: Twilio Authentication Token
+    devrev_field_type: text
+    ui:
+        display_name: Twilio Authentication Token
