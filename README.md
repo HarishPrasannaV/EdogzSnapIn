@@ -11,7 +11,7 @@ A Snap-In developed for DevRev platform by the team EDogs as a submission for De
 - The transcription is then fed into OpenAI GPT-3.5 to generate, the title for the ticket, a summary of the conversation, CSAT(Customer Satisfaction) and Action items, Using this information a new ticket is created within DevRev.
 - Also with the ticket, the URL for the audio of the recorded and the actual transcription is attached.
 # Execution flow
-Yellow -> The feature is yet to be implemented
+Yellow -> The feature is yet to be implemented and 
 Blue -> The feature has been successfully implemented
 ![](https://i.imgur.com/edEGXb2.png)
 # Code Repository Link
